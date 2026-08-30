@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Loading from '../components/Loading.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
+import SafeImage from '../components/SafeImage.jsx';
+import ReviewSection from '../components/ReviewSection.jsx';
 
 export default function DestinationDetails() {
   const { id } = useParams();
@@ -12,6 +14,7 @@ export default function DestinationDetails() {
   const [status, setStatus] = useState('loading');
   const [favorites, setFavorites] = useState([]);
   const [busy, setBusy] = useState(false);
+  const lastTrackedId = useRef(null);
 
   const load = async () => {
     setStatus('loading');
@@ -21,7 +24,13 @@ export default function DestinationDetails() {
       setStatus('ready');
 
       if (user) {
-        api.post(`/users/recently-viewed/${id}`).catch(() => {});
+        // Guard against firing twice for the same destination - e.g. React
+        // StrictMode's double-invoked effects in development, or rapid
+        // back/forward navigation landing on the same id.
+        if (lastTrackedId.current !== id) {
+          lastTrackedId.current = id;
+          api.post(`/users/recently-viewed/${id}`).catch(() => {});
+        }
         api.get('/users/favorites').then((res) => setFavorites(res.data.data.map((f) => f._id))).catch(() => {});
       }
     } catch {
@@ -58,7 +67,7 @@ export default function DestinationDetails() {
   return (
     <div>
       <div className="relative h-[55vh] w-full overflow-hidden">
-        <img src={destination.image} alt={destination.name} className="w-full h-full object-cover" />
+        <SafeImage src={destination.image} alt={destination.name} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-dusk via-dusk/40 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 max-w-7xl mx-auto px-6 sm:px-10 pb-12">
           <p className="font-mono text-xs uppercase tracking-widest text-amber mb-2">{destination.category}</p>
@@ -114,6 +123,10 @@ export default function DestinationDetails() {
             Plan a Trip Here
           </Link>
         </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 sm:px-10 pb-24">
+        <ReviewSection targetType="Destination" targetId={destination._id} />
       </div>
     </div>
   );

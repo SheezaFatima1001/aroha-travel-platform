@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Loading from '../components/Loading.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
+import EmptyState from '../components/EmptyState.jsx';
+import StarRating from '../components/StarRating.jsx';
+import ReviewForm from '../components/ReviewForm.jsx';
 
 export default function Profile() {
   const { setUser } = useAuth();
@@ -10,6 +14,46 @@ export default function Profile() {
   const [status, setStatus] = useState('loading');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  const [myReviews, setMyReviews] = useState([]);
+  const [reviewsStatus, setReviewsStatus] = useState('loading');
+  const [editingReview, setEditingReview] = useState(null);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+
+  const loadReviews = async () => {
+    setReviewsStatus('loading');
+    try {
+      const { data } = await api.get('/reviews/mine');
+      setMyReviews(data.data);
+      setReviewsStatus('ready');
+    } catch {
+      setReviewsStatus('error');
+    }
+  };
+
+  const deleteReview = async (id) => {
+    if (!confirm('Delete this review? This cannot be undone.')) return;
+    await api.delete(`/reviews/${id}`);
+    loadReviews();
+  };
+
+  const submitReviewEdit = async (payload) => {
+    setReviewSubmitting(true);
+    try {
+      await api.put(`/reviews/${editingReview._id}`, payload);
+      setEditingReview(null);
+      await loadReviews();
+      return true;
+    } catch {
+      return false;
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
+  useEffect(() => {
+    loadReviews();
+  }, []);
 
   const load = async () => {
     setStatus('loading');
@@ -99,6 +143,63 @@ export default function Profile() {
           {saving ? 'Saving\u2026' : 'Save changes'}
         </button>
       </form>
+
+      <div className="mt-20">
+        <p className="font-mono text-xs uppercase tracking-widest text-amber mb-2">Your activity</p>
+        <h2 className="font-display text-3xl text-stone mb-8">My Reviews</h2>
+
+        {reviewsStatus === 'loading' && <Loading label="Loading your reviews" />}
+        {reviewsStatus === 'error' && <ErrorMessage message="Couldn't load your reviews." onRetry={loadReviews} />}
+        {reviewsStatus === 'ready' && myReviews.length === 0 && (
+          <EmptyState
+            title="You haven't written any reviews yet."
+            description="Reviews you leave on destinations and services will show up here."
+          />
+        )}
+        {reviewsStatus === 'ready' && myReviews.length > 0 && (
+          <div className="space-y-4">
+            {myReviews.map((r) =>
+              editingReview?._id === r._id ? (
+                <ReviewForm
+                  key={r._id}
+                  initial={editingReview}
+                  submitting={reviewSubmitting}
+                  onSubmit={submitReviewEdit}
+                  onCancel={() => setEditingReview(null)}
+                />
+              ) : (
+                <div key={r._id} className="border border-stone/10 rounded-2xl p-6 bg-duskdeep">
+                  <div className="flex items-start justify-between gap-4 mb-2">
+                    <div>
+                      <p className="font-mono text-[10px] uppercase tracking-widest text-teal mb-1">{r.targetType}</p>
+                      {r.targetId ? (
+                        <Link
+                          to={`/${r.targetType === 'Destination' ? 'destinations' : 'services'}/${r.targetId._id}`}
+                          className="font-display text-lg text-stone hover:text-amber"
+                        >
+                          {r.targetId.name || r.targetId.serviceName}
+                        </Link>
+                      ) : (
+                        <p className="font-display text-lg text-stone/50">Listing no longer available</p>
+                      )}
+                    </div>
+                    <StarRating value={r.rating} readOnly size="sm" />
+                  </div>
+                  <p className="font-body text-sm text-stone/70 mt-2">{r.reviewText}</p>
+                  <div className="flex gap-3 mt-4 pt-4 border-t border-stone/10">
+                    <button onClick={() => setEditingReview(r)} className="font-body text-xs text-stone/50 hover:text-amber">
+                      Edit
+                    </button>
+                    <button onClick={() => deleteReview(r._id)} className="font-body text-xs text-stone/50 hover:text-clay">
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

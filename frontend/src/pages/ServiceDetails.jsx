@@ -4,6 +4,8 @@ import api from '../services/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Loading from '../components/Loading.jsx';
 import ErrorMessage from '../components/ErrorMessage.jsx';
+import SafeImage from '../components/SafeImage.jsx';
+import ReviewSection from '../components/ReviewSection.jsx';
 
 export default function ServiceDetails() {
   const { id } = useParams();
@@ -31,9 +33,10 @@ export default function ServiceDetails() {
   if (status === 'error' || !service) return <ErrorMessage message="Service not found." />;
 
   return (
-    <div className="max-w-7xl mx-auto px-6 sm:px-10 py-16 grid grid-cols-1 lg:grid-cols-2 gap-12">
+    <div className="max-w-7xl mx-auto px-6 sm:px-10 py-16">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
       <div className="rounded-2xl overflow-hidden aspect-[4/3]">
-        <img src={service.image} alt={service.serviceName} className="w-full h-full object-cover" />
+        <SafeImage src={service.image} alt={service.serviceName} className="w-full h-full object-cover" />
       </div>
       <div>
         <p className="font-mono text-xs uppercase tracking-widest text-amber mb-2">{service.category}</p>
@@ -85,6 +88,11 @@ export default function ServiceDetails() {
             Login to Book
           </Link>
         )}
+      </div>
+      </div>
+
+      <div className="pt-24">
+        <ReviewSection targetType="Service" targetId={service._id} />
       </div>
     </div>
   );

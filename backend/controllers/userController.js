@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Trip from '../models/Trip.js';
 import Booking from '../models/Booking.js';
@@ -68,12 +69,40 @@ export const getFavorites = async (req, res, next) => {
 export const addRecentlyViewed = async (req, res, next) => {
   try {
     const { destinationId } = req.params;
-    await User.findByIdAndUpdate(req.user._id, { $pull: { recentlyViewed: { destination: destinationId } } });
+
+    // Single atomic pipeline update: filter out any existing entry for this
+    // destination, then prepend a fresh one and cap at 10. Doing this as one
+    // aggregation-pipeline update (rather than a separate $pull then $push)
+    // avoids a race condition where two near-simultaneous requests (e.g. from
+    // React StrictMode's double-invoked effects in development) can both
+    // "remove" before either "adds", resulting in duplicate entries.
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { $push: { recentlyViewed: { $each: [{ destination: destinationId, viewedAt: new Date() }], $position: 0, $slice: 10 } } },
+      [
+        {
+          $set: {
+            recentlyViewed: {
+              $concatArrays: [
+                [{ destination: new mongoose.Types.ObjectId(destinationId), viewedAt: new Date() }],
+                {
+                  $slice: [
+                    {
+                      $filter: {
+                        input: '$recentlyViewed',
+                        cond: { $ne: ['$$this.destination', new mongoose.Types.ObjectId(destinationId)] },
+                      },
+                    },
+                    9,
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      ],
       { new: true }
     ).populate('recentlyViewed.destination');
+
     res.json({ success: true, data: user.recentlyViewed });
   } catch (err) {
     next(err);
