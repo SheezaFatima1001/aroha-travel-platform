@@ -20,6 +20,7 @@ import TripDetails from './pages/TripDetails.jsx';
 import Bookings from './pages/Bookings.jsx';
 import BookingNew from './pages/BookingNew.jsx';
 import BookingConfirmation from './pages/BookingConfirmation.jsx';
+import Recommendations from './pages/Recommendations.jsx';
 
 export default function App() {
   return (
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/recommendations" element={<ProtectedRoute><Recommendations /></ProtectedRoute>} />
 
             <Route path="/trips" element={<ProtectedRoute><Trips /></ProtectedRoute>} />
             <Route path="/trips/create" element={<ProtectedRoute><TripCreate /></ProtectedRoute>} />

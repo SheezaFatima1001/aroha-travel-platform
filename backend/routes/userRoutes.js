@@ -8,6 +8,8 @@ import {
   getFavorites,
   addRecentlyViewed,
   getDashboard,
+  getPreferences,
+  updatePreferences,
 } from '../controllers/userController.js';
 
 const router = express.Router();
@@ -17,6 +19,9 @@ router.use(protect);
 router.get('/profile', getProfile);
 router.put('/profile', updateProfile);
 router.get('/dashboard', getDashboard);
+
+router.get('/preferences', getPreferences);
+router.put('/preferences', updatePreferences);
 
 router.get('/favorites', getFavorites);
 router.post('/favorites/:destinationId', addFavorite);

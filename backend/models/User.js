@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+const DESTINATION_CATEGORIES = ['Mountains', 'Beaches', 'Historical', 'Cultural', 'Adventure', 'Cities', 'Nature', 'Religious', 'Luxury'];
+
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: [true, 'Name is required'], trim: true },
@@ -22,6 +24,17 @@ const userSchema = new mongoose.Schema(
         viewedAt: { type: Date, default: Date.now },
       },
     ],
+    preferences: {
+      budget: { type: String, enum: ['Budget', 'Mid-range', 'Luxury', null], default: null },
+      travelStyle: {
+        type: String,
+        enum: ['Adventure', 'Relaxation', 'Cultural', 'Family', 'Luxury', null],
+        default: null,
+      },
+      preferredCategory: { type: String, enum: [...DESTINATION_CATEGORIES, null], default: null },
+      preferredLocation: { type: String, default: '', trim: true },
+      tripDuration: { type: Number, min: 1, max: 60, default: null },
+    },
   },
   { timestamps: true }
 );

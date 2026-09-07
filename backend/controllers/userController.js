@@ -70,12 +70,6 @@ export const addRecentlyViewed = async (req, res, next) => {
   try {
     const { destinationId } = req.params;
 
-    // Single atomic pipeline update: filter out any existing entry for this
-    // destination, then prepend a fresh one and cap at 10. Doing this as one
-    // aggregation-pipeline update (rather than a separate $pull then $push)
-    // avoids a race condition where two near-simultaneous requests (e.g. from
-    // React StrictMode's double-invoked effects in development) can both
-    // "remove" before either "adds", resulting in duplicate entries.
     const user = await User.findByIdAndUpdate(
       req.user._id,
       [
@@ -104,6 +98,53 @@ export const addRecentlyViewed = async (req, res, next) => {
     ).populate('recentlyViewed.destination');
 
     res.json({ success: true, data: user.recentlyViewed });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getPreferences = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    res.json({ success: true, data: user.preferences });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updatePreferences = async (req, res, next) => {
+  try {
+    const { budget, travelStyle, preferredCategory, preferredLocation, tripDuration } = req.body;
+
+    const validBudgets = ['Budget', 'Mid-range', 'Luxury'];
+    const validStyles = ['Adventure', 'Relaxation', 'Cultural', 'Family', 'Luxury'];
+    const validCategories = ['Mountains', 'Beaches', 'Historical', 'Cultural', 'Adventure', 'Cities', 'Nature', 'Religious', 'Luxury'];
+
+    if (budget && !validBudgets.includes(budget)) {
+      return res.status(400).json({ success: false, message: `Budget must be one of: ${validBudgets.join(', ')}` });
+    }
+    if (travelStyle && !validStyles.includes(travelStyle)) {
+      return res.status(400).json({ success: false, message: `Travel style must be one of: ${validStyles.join(', ')}` });
+    }
+    if (preferredCategory && !validCategories.includes(preferredCategory)) {
+      return res.status(400).json({ success: false, message: `Category must be one of: ${validCategories.join(', ')}` });
+    }
+    if (tripDuration !== undefined && tripDuration !== null && tripDuration !== '') {
+      const n = Number(tripDuration);
+      if (!Number.isFinite(n) || n < 1 || n > 60) {
+        return res.status(400).json({ success: false, message: 'Trip duration must be a number between 1 and 60 days' });
+      }
+    }
+
+    const update = {};
+    if (budget !== undefined) update['preferences.budget'] = budget || null;
+    if (travelStyle !== undefined) update['preferences.travelStyle'] = travelStyle || null;
+    if (preferredCategory !== undefined) update['preferences.preferredCategory'] = preferredCategory || null;
+    if (preferredLocation !== undefined) update['preferences.preferredLocation'] = preferredLocation;
+    if (tripDuration !== undefined) update['preferences.tripDuration'] = tripDuration === '' ? null : Number(tripDuration);
+
+    const user = await User.findByIdAndUpdate(req.user._id, { $set: update }, { new: true, runValidators: true });
+    res.json({ success: true, data: user.preferences });
   } catch (err) {
     next(err);
   }

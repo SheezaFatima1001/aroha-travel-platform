@@ -21,6 +21,7 @@ export default function Navbar() {
   const userLinks = [
     { to: '/destinations', label: 'Destinations' },
     { to: '/services', label: 'Services' },
+    { to: '/recommendations', label: 'For You' },
     { to: '/dashboard', label: 'Dashboard' },
     { to: '/trips', label: 'My Trips' },
     { to: '/favorites', label: 'Favorites' },
