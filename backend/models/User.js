@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema(
       match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email'],
     },
     password: { type: String, required: [true, 'Password is required'], minlength: 6, select: false },
+    role: { type: String, enum: ['user', 'admin'], default: 'user' },
     profileImage: { type: String, default: '' },
     bio: { type: String, default: '', maxlength: 500 },
     favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Destination' }],

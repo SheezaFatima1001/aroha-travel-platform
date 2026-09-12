@@ -29,6 +29,9 @@ export default function Navbar() {
   ];
 
   const links = user ? userLinks : guestLinks;
+  if (user?.role === 'admin') {
+    links.push({ to: '/admin', label: 'Admin' });
+  }
 
   const handleLogout = () => {
     logout();

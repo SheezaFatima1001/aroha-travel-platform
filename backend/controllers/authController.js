@@ -1,13 +1,13 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
-const signToken = (id) =>
-  jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+const signToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
 const sanitize = (user) => ({
   _id: user._id,
   name: user.name,
   email: user.email,
+  role: user.role,
   profileImage: user.profileImage,
   bio: user.bio,
 });

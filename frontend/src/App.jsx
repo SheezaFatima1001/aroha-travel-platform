@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.jsx';
 import MainLayout from './layouts/MainLayout.jsx';
+import AdminLayout from './layouts/AdminLayout.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import AdminRoute from './components/AdminRoute.jsx';
 
 import Home from './pages/Home.jsx';
 import Destinations from './pages/Destinations.jsx';
@@ -21,6 +23,10 @@ import Bookings from './pages/Bookings.jsx';
 import BookingNew from './pages/BookingNew.jsx';
 import BookingConfirmation from './pages/BookingConfirmation.jsx';
 import Recommendations from './pages/Recommendations.jsx';
+import AdminOverview from './pages/admin/AdminOverview.jsx';
+import AdminBookings from './pages/admin/AdminBookings.jsx';
+import AdminListings from './pages/admin/AdminListings.jsx';
+import AdminUsers from './pages/admin/AdminUsers.jsx';
 
 export default function App() {
   return (
@@ -49,6 +55,13 @@ export default function App() {
             <Route path="/bookings" element={<ProtectedRoute><Bookings /></ProtectedRoute>} />
             <Route path="/bookings/new/:serviceId" element={<ProtectedRoute><BookingNew /></ProtectedRoute>} />
             <Route path="/booking-confirmation/:id" element={<ProtectedRoute><BookingConfirmation /></ProtectedRoute>} />
+
+            <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+              <Route index element={<AdminOverview />} />
+              <Route path="bookings" element={<AdminBookings />} />
+              <Route path="listings" element={<AdminListings />} />
+              <Route path="users" element={<AdminUsers />} />
+            </Route>
           </Route>
         </Routes>
       </BrowserRouter>

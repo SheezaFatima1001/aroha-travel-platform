@@ -52,7 +52,7 @@ export const getBookingById = async (req, res, next) => {
   try {
     const booking = await Booking.findById(req.params.id).populate('service');
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
-    if (!ensureOwnership(booking, req.user._id, res)) return;
+    if (req.user.role !== 'admin' && !ensureOwnership(booking, req.user._id, res)) return;
     res.json({ success: true, data: booking });
   } catch (err) {
     next(err);
@@ -86,13 +86,54 @@ export const cancelBooking = async (req, res, next) => {
   try {
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
-    if (!ensureOwnership(booking, req.user._id, res)) return;
+    if (req.user.role !== 'admin' && !ensureOwnership(booking, req.user._id, res)) return;
     if (booking.bookingStatus === 'Completed') {
       return res.status(400).json({ success: false, message: 'Completed bookings cannot be cancelled' });
     }
     booking.bookingStatus = 'Cancelled';
     await booking.save();
     res.json({ success: true, data: booking });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ---- Admin-only: booking status management ----
+
+const VALID_STATUSES = ['Pending', 'Confirmed', 'Cancelled', 'Completed'];
+
+// PATCH /api/bookings/:id/status  (admin only)
+export const updateBookingStatus = async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    if (!status || !VALID_STATUSES.includes(status)) {
+      return res.status(400).json({ success: false, message: `Status must be one of: ${VALID_STATUSES.join(', ')}` });
+    }
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+
+    booking.bookingStatus = status;
+    await booking.save();
+    const populated = await booking.populate(['service', 'user']);
+    res.json({ success: true, data: populated });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET /api/bookings/admin/all  (admin only) - every booking across all users
+export const getAllBookingsAdmin = async (req, res, next) => {
+  try {
+    const { status } = req.query;
+    const filter = {};
+    if (status) filter.bookingStatus = status;
+
+    const bookings = await Booking.find(filter)
+      .populate('service')
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, count: bookings.length, data: bookings });
   } catch (err) {
     next(err);
   }

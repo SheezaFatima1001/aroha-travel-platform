@@ -1,4 +1,5 @@
 import express from 'express';
+import { protect, adminOnly } from '../middleware/authMiddleware.js';
 import {
   getDestinations,
   getDestinationById,
@@ -9,12 +10,14 @@ import {
 
 const router = express.Router();
 
-router.route('/').get(getDestinations).post(createDestination);
-router
-  .route('/:id')
-  .get(getDestinationById)
-  .put(updateDestination)
-  .patch(updateDestination)
-  .delete(deleteDestination);
+// Public read access
+router.get('/', getDestinations);
+router.get('/:id', getDestinationById);
+
+// Admin-only write access
+router.post('/', protect, adminOnly, createDestination);
+router.put('/:id', protect, adminOnly, updateDestination);
+router.patch('/:id', protect, adminOnly, updateDestination);
+router.delete('/:id', protect, adminOnly, deleteDestination);
 
 export default router;
